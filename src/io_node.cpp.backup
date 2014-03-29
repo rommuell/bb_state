@@ -1,0 +1,173 @@
+#include "ros/ros.h"
+#include "geometry_msgs/Twist.h"
+#include "EPOSControl.h"
+#include "bbcontrol/TwistWithID.h"
+
+
+
+
+class io_node
+{
+ private:
+  static const double beachbot_width_ = 0.264;
+  static const double lengthcenterofrotation_frontwheel_= 0.31;
+  double abs_vel_input_;
+  double ang_vel_input_;
+  double vel_right_wheel_;
+  double vel_left_wheel_;
+  double hexvel_left_wheel_;
+  double hexvel_right_wheel_;
+  double phi_front_wheel_;
+  int angleinquants;
+  int oldangleinquants;
+  ros::NodeHandle n;
+  ros::Publisher to_epos_pub_;
+  FILE * deviceFilePointer;
+  int roundsturnedfrontwheelmotor;
+  std::vector<int> closest_equivalent;
+
+  // IO Variables:
+  uint64_t IOMessage;
+  uint64_t IOStatus;
+  //
+
+ public:
+  void twist_io_Callback(const geometry_msgs::Twist velocitymessage) {
+    abs_vel_input_ = velocitymessage.linear.x;
+    ang_vel_input_ = velocitymessage.angular.z;  
+
+    //from here: stuff that was in int main()
+    int roundsturnedfrontwheelmotor;
+    std::vector<int> closest_equivalent;
+    
+
+
+    //Calculation of Wheel velocities:
+    vel_left_wheel_ = abs_vel_input_ + ang_vel_input_ * beachbot_width_;
+    vel_right_wheel_ = abs_vel_input_ - ang_vel_input_ * beachbot_width_;
+    //
+
+    //Conversion to numbers that the escon takes:
+    hexvel_left_wheel_ = (32512 * vel_left_wheel_ + 32768);
+    hexvel_right_wheel_ = (32512 * vel_right_wheel_ + 32768);
+    //
+
+    //Calculation of Frontwheel Steeringangle:
+    if(abs_vel_input_ < 0.00001 && abs_vel_input_ > -0.00001) {
+      if(ang_vel_input_ > 0.00002 || ang_vel_input_ < -0.00002) {
+        if(ang_vel_input_ < 0) {
+          phi_front_wheel_ = -3.14159/2;
+          }
+        else {
+          phi_front_wheel_ = 3.14159/2;
+        }
+      }
+      else if(angleinquants == 0) {
+        phi_front_wheel_ = 0;
+      }
+    }
+    else {
+      phi_front_wheel_ = atan2( (lengthcenterofrotation_frontwheel_*ang_vel_input_),abs_vel_input_);
+    }
+    //
+        
+        
+
+        
+    //Conversion of Frontwheel angle into numbers corresponding to the quants of front wheel motor:
+    angleinquants = floor(phi_front_wheel_/3.14159 * 1464);
+    //
+       
+    //Ensuring that the front wheel does sensible movements:
+    roundsturnedfrontwheelmotor = floor(oldangleinquants/1464);
+
+    angleinquants = roundsturnedfrontwheelmotor * 1464 + angleinquants;
+    //ROS_INFO("anglequants %d", angleinquants);
+
+    closest_equivalent.clear();
+    closest_equivalent.push_back(angleinquants);
+    closest_equivalent.push_back(angleinquants + 1464);
+    closest_equivalent.push_back(angleinquants + 2928);
+    closest_equivalent.push_back(angleinquants - 1464);
+    closest_equivalent.push_back(angleinquants - 2928);
+
+    int temporary = 300000;
+
+    for(int i=0;i<5;i++) {
+      if (abs(oldangleinquants - closest_equivalent.at(i)) < temporary){
+          temporary = abs(oldangleinquants - closest_equivalent.at(i));
+          angleinquants = closest_equivalent.at(i);
+      }
+
+    }
+    //
+    
+    //Visualization:
+    //ROS_INFO("angleinquants: %d",angleinquants);
+    //
+
+    //Declaration of Publisher for Epos Front Wheel:
+
+    //EposManager Instance:
+    EposManager::EPOSControl Eposmsg;
+        
+    //Publish to frontwheel Epos:
+    Eposmsg.node_id = 1;
+    Eposmsg.control_mode = 2;
+    Eposmsg.setpoint = angleinquants;
+    to_epos_pub_.publish(Eposmsg);
+    //
+        
+    //Assign oldangleinquants:
+    oldangleinquants = angleinquants;
+    //
+    ////////////////////////////////////////
+  }
+
+  void rake_io_Callback(const bbcontrol::Rake rake)
+  {
+    // = rake.rakepin1;
+  }
+
+
+  ~io_node() {
+		geometry_msgs::Twist stop_twist;
+		stop_twist.linear.x = 0;
+		stop_twist.angular.z = 0;
+		SetVelocity(stop_twist);
+		fclose (deviceFilePointer);
+  }
+};
+
+int main(int argc, char **argv) {
+    angleinquants = 0;
+    oldangleinquants = 0;
+    abs_vel_input_ = 0;
+    ang_vel_input_ = 0;
+
+    ros::init(argc, argv, "io_node");
+    ros::NodeHandle n;
+    ros::Subscriber rake_io_sub = n.subscribe("rake_io", 1000, &io_node::rake_io_Callback, this);
+    ros::Subscriber twist_sub = n.subscribe("move_io", 1000, &io_node::twist_io_Callback, this);
+
+    to_epos_pub_ = n.advertise<EposManager::EPOSControl>("/motors/BeachBot/Motor_Control", 10);
+    deviceFilePointer = fopen ("/dev/beachbot.ioboard", "w");
+
+    ros::Rate loop_rate(25);
+    while (ros::ok()) {
+        ros::spinOnce();
+
+        //Generate Hexadecimals to write into /dev/beachbot.ioboard (for escons):
+        IOStatus = 0x01;
+        IOMessage = 0 | (IOStatus<<32) | (((uint64_t)hexvel_left_wheel_)<<16) | (((uint64_t)hexvel_right_wheel_));
+
+        //Write into file /dev/beachbot.ioboard (for escons):
+        IOMessage = __builtin_bswap64(IOMessage);
+        fwrite (&IOMessage , 8, 1, deviceFilePointer);
+        fflush(deviceFilePointer);
+
+        loop_rate.sleep();
+    }
+
+    return 0;
+}

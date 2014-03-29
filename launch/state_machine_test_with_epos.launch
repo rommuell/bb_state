@@ -1,0 +1,26 @@
+<launch>
+	<rosparam command="load" file="$(find EposManager)/params/Beachbot_1.yaml" ns="motors/BeachBot/Beachbot_1" />
+
+
+	<node name="Name" pkg="EposManager" type="EposManager" args="Beachbot_1" ns="motors/BeachBot" output="screen" >
+		<param name="Port" value="USB0" />
+		<param name="Protocol" value="USB" />
+		<param name="Publish_Rate" value=".1" />
+		<param name="Heartbeat" value="false" />
+		<param name="Max_Heartbeat_Attempts" value="20" />
+		<param name="Heartbeat_Rate" value=".5" />
+	</node>
+	
+	<node name="dynamic_reconfigure" pkg="dynamic_reconfigure" type="reconfigure_gui" />
+	
+	<group>
+		<node pkg="bbcontrol" name="JoystickoneStickversion" type="JoystickoneStickversion" output="screen"/>
+		<node pkg="joy" name="joy_node" type="joy_node" output="screen"/>
+		<node pkg="bbcontrol" name="state_machine" type="state_machine" output="screen"/>
+		<node pkg="bbcontrol" name="io_node" type="io_node" output="screen"/>
+		<node pkg="rosserial_python" name="serial_node" type="serial_node.py" args="/dev/ttyACM0" output="screen"/>
+	</group>
+
+	
+
+</launch>
