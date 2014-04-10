@@ -1,4 +1,4 @@
-#include "EPOSControl.h"
+#include <EposManager/EPOSControl.h>
 
 class Initialization {
  public:
