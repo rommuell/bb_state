@@ -10,7 +10,7 @@
 #include <tf/transform_broadcaster.h>
 #include "ioboard/IOFromBoard.h"
 #include "ioboard/IOToBoard.h"
-#include <callback_queue.h>
+// #include <callback_queue.h>
 // Threading for async IO
 // #include <thread>
 
@@ -28,7 +28,8 @@ private:
   double abs_vel_read_by_escon;
   double ang_vel_read_by_escon;
   int oldangleinquants;
-
+  int odom_count;
+  nav_msgs::Odometry odom;
   ros::NodeHandle n;
   ros::NodeHandle node_odom;
   ros::CallbackQueue odom_cb_queue;
