@@ -10,11 +10,11 @@
 #include <tf/transform_broadcaster.h>
 #include <ioboard/IOFromBoard.h>
 #include <ioboard/IOToBoard.h>
-
+#include <callback_queue.h>
 #include <bb_state/IONode.h>
 
 // Threading for async IO
-// #include <thread>
+#include <thread>
 
 void IONode::SendTwist(const bb_state::TwistWithID velocitymessage) {
 
@@ -150,7 +150,6 @@ void IONode::IOBoardCallback(ioboard::IOFromBoard from_escon_message) {
 void IONode::PublishOdometry() {    
   //if((ros::Time::now() - last_publish_time).nsec > 40000000) {
     nav_msgs::Odometry odom;
-    
 
     //since all odometry is 6DOF we'll need a quaternion created from yaw
     geometry_msgs::Quaternion odom_quat = tf::createQuaternionMsgFromYaw(pose_theta_read_by_escon_leapfrog_);
@@ -175,16 +174,23 @@ void IONode::PublishOdometry() {
     odom_pub.publish(odom);
   //}
 }
-  
+
+IONode::OdomThread() {
+}
+
 IONode::IONode() {
+  node_odom.setCallbackQueue(&odom_cb_queue);
 
   //move_sub = n.subscribe("move_io", 1, &IONode::SendTwist, this);
-  from_escon_sub = n.subscribe("io_from_board", 1, &IONode::IOBoardCallback, this);
+  from_escon_sub = node_odom.subscribe("io_from_board", 1, &IONode::IOBoardCallback, this);
 
-  to_escon_pub = n.advertise<ioboard::IOToBoard>("to_ioboard", 10);
-  to_epos_pub = n.advertise<EposManager::EPOSControl>("/motors/BeachBot/Motor_Control", 10);
-  odom_pub = n.advertise<nav_msgs::Odometry>("odometry", 10);
+  to_escon_pub = n.advertise<ioboard::IOToBoard>("to_ioboard", 1);
+  to_epos_pub = n.advertise<EposManager::EPOSControl>("/motors/BeachBot/Motor_Control", 1);
+
+  odom_pub = n.advertise<nav_msgs::Odometry>("odometry", 100);
   
+  std::thread odom_thread (IONode::OdomThread);
+
   oldangleinquants = 0;
   old_pose_theta_read_by_escon_ = 0;
 

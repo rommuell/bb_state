@@ -10,7 +10,7 @@
 #include <tf/transform_broadcaster.h>
 #include "ioboard/IOFromBoard.h"
 #include "ioboard/IOToBoard.h"
-
+#include <callback_queue.h>
 // Threading for async IO
 // #include <thread>
 
@@ -30,6 +30,8 @@ private:
   int oldangleinquants;
 
   ros::NodeHandle n;
+  ros::NodeHandle node_odom;
+  ros::CallbackQueue odom_cb_queue;
   ros::Subscriber rake_io_sub;
   ros::Subscriber move_sub;
   ros::Subscriber from_escon_sub;

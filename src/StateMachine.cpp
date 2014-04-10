@@ -11,31 +11,41 @@ private:
   ros::NodeHandle n;
   ros::Subscriber state_sub;
   ros::Subscriber move_sub;
+  ros::AsyncSpinner spinner;
   IONode * io;
   ros::Publisher io_pub;
   int current_state_;
   int joystick;
   void loop() { //main loop
-    ros::Rate loop_rate(25);
-    while (ros::ok() && current_state_ != TwistWithID::SHUT_DOWN) {
-      ros::spinOnce();
-      if (current_state_ == TwistWithID::INITIALIZE) {  //do stuff for initialization
-        ros::Rate init_rate(1);   //Only try once a second
-        Initialization *init = new Initialization();
-        while(ros::ok() && !(init->Initialize())) init_rate.sleep();  //loop until initialize is success
-        current_state_ = TwistWithID::PATH_FOLLOWING; //set to joystick if success
-        ROS_INFO("Starting joystick operation");
-      }
-      io->PublishOdometry();
-      loop_rate.sleep();
-    }
+    // ros::Rate loop_rate(25);
+    spinner.start();
+    ros::waitForShutdown();
+
+    // while (ros::ok() && current_state_ != TwistWithID::SHUT_DOWN) {
+    //   ros::spinOnce();
+      // if (current_state_ == TwistWithID::INITIALIZE) {  //do stuff for initialization
+      //   current_state_ = TwistWithID::PATH_FOLLOWING; //set to joystick if success
+      // }
+    //   loop_rate.sleep();
+    // }
   };
 
   void SetState(const int &new_state) {
     if(new_state != current_state_) {
       current_state_ = new_state;
-      if (new_state == TwistWithID::EMERGENCY_STOP) ROS_ERROR("EMERGENCY STOP");
-      if (new_state == TwistWithID::INITIALIZE) ROS_INFO("Starting initialization");
+      if (new_state == TwistWithID::EMERGENCY_STOP) {
+        spinner.stop();
+        ros::shutdown();
+        ROS_ERROR("EMERGENCY STOP");
+      } 
+      if (new_state == TwistWithID::INITIALIZE) {
+        ROS_INFO("Starting initialization");
+        ros::Rate init_rate(1);   //Only try once a second
+        Initialization *init = new Initialization();
+        while(ros::ok() && !(init->Initialize())) init_rate.sleep();  //loop until initialize is success
+        current_state_ = TwistWithID::PATH_FOLLOWING;
+        ROS_INFO("Starting joystick operation");
+      }
       if (new_state == TwistWithID::JOYSTICK) ROS_INFO("Starting joystick operation");
       if (new_state == TwistWithID::PATH_FOLLOWING) ROS_INFO("Starting path following");
       if (new_state == TwistWithID::PARKING) ROS_INFO("Starting parking");
@@ -74,7 +84,7 @@ private:
     else if (data.id == TwistWithID::SHUT_DOWN) ROS_WARN("Received unpermitted move command from Shut Down");
   }
 public:
-  StateMachine() {
+  StateMachine() : spinner(4) {
     current_state_ = -1;
     SetState(TwistWithID::INITIALIZE);
     io = new IONode();
