@@ -42,7 +42,8 @@ private:
   nav_msgs::Odometry odom;
   ioboard::IOToBoard io_to_board_message_;
   
-  ros::Time last_time_right, last_time_left, last_publish_time;
+  ros::Time last_publish_time;
+  uint32_t last_time_right, last_time_left;
 
   EposManager::EPOSControl Eposmsg;
 
