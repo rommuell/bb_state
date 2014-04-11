@@ -99,7 +99,6 @@ void IONode::SendTwist(const bb_state::TwistWithID velocitymessage) {
 
 void IONode::IOBoardCallback(ioboard::IOFromBoard from_escon_message) {
   double v_left, v_right;
-  double pose_theta_read_by_escon;
 
   ros::Time current_time = ros::Time::now();
   ros::Duration time_increment;
@@ -107,14 +106,16 @@ void IONode::IOBoardCallback(ioboard::IOFromBoard from_escon_message) {
     v_left = from_escon_message.velocity;
     v_right = 409;
     time_increment = (current_time - last_time_left);
+    last_time_left = current_time;
+
   }
   else {
     v_right = from_escon_message.velocity;
     v_left  = 409;
     time_increment = (current_time - last_time_right);
+    last_time_right = current_time;
   }
   
-  last_time_left = current_time;
   double d_time_inc = time_increment.toSec();
 
   // 4.94V is absolute max (equals 1023 ticks)
@@ -129,7 +130,7 @@ void IONode::IOBoardCallback(ioboard::IOFromBoard from_escon_message) {
   double vel_left_wheel_read_by_escon =  rpm_left / (60 * 47) * 0.725;
 
   abs_vel_read_by_escon = (vel_right_wheel_read_by_escon + vel_left_wheel_read_by_escon) / 2;
-  ang_vel_read_by_escon = (vel_left_wheel_read_by_escon - vel_right_wheel_read_by_escon) / BB_WIDTH;
+  ang_vel_read_by_escon = (vel_right_wheel_read_by_escon - vel_left_wheel_read_by_escon) / BB_WIDTH;
 
   //Integration:
   double delta_pose_theta_read_by_escon = ang_vel_read_by_escon * d_time_inc;
@@ -146,9 +147,9 @@ void IONode::IOBoardCallback(ioboard::IOFromBoard from_escon_message) {
 
   old_pose_theta_read_by_escon_ = pose_theta_read_by_escon;
 
-  if(odom_count >= 25) {
+  if(this->odom_count >= 25) {
     this->PublishOdometry();
-    odom_count = 0;
+    this->odom_count = 0;
   }
 }
 
@@ -179,12 +180,8 @@ void IONode::PublishOdometry() {
   //}
 }
 
-// IONode::OdomThread() {
-// }
-
 IONode::IONode() {
 
-  //move_sub = n.subscribe("move_io", 1, &IONode::SendTwist, this);
   from_escon_sub = n.subscribe("io_from_board", 1, &IONode::IOBoardCallback, this);
 
   to_escon_pub = n.advertise<ioboard::IOToBoard>("to_ioboard", 1);
@@ -192,14 +189,23 @@ IONode::IONode() {
 
   odom_pub = n.advertise<nav_msgs::Odometry>("odometry", 100);
   
-  // std::thread odom_thread (IONode::OdomThread);
-  odom_count = 0;
-  oldangleinquants = 0;
-  old_pose_theta_read_by_escon_ = 0;
-
   last_time_right = ros::Time::now();
   last_time_left = ros::Time::now();
 
+  old_pose_theta_read_by_escon_ = 0;
+  pose_x_read_by_escon_ = 0;
+  pose_y_read_by_escon_ = 0;
+  pose_theta_read_by_escon_leapfrog_ = 0;
+  phi_front_wheel_ = 0;
+  abs_vel_read_by_escon = 0;
+  ang_vel_read_by_escon = 0;
+  pose_theta_read_by_escon = 0;
+  oldangleinquants = 0;
+  odom_count = 0;
+
+
+
+  // Put all pins up and stop robot
   bb_state::TwistWithID stop_twist;
   stop_twist.twist.linear.x = 0;
   stop_twist.twist.angular.z = 0;
@@ -223,17 +229,3 @@ IONode::~IONode() {
   to_escon_pub.publish(io_to_board_message_);
   
 }
-
-// int main(int argc, char **argv) {
-//   ros::init(argc, argv, "IONode");
-//   IONode *io = new IONode();
-//   ros::Rate loop_rate(300);
-
-//   while (ros::ok()) {
-//     ros::spinOnce();
-//     io->PublishOdometry();
-//     loop_rate.sleep();
-//   }
-//   delete io;
-//   return 0;
-// }

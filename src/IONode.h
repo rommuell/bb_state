@@ -27,6 +27,7 @@ private:
   double phi_front_wheel_;
   double abs_vel_read_by_escon;
   double ang_vel_read_by_escon;
+  double pose_theta_read_by_escon;
   int oldangleinquants;
   int odom_count;
   nav_msgs::Odometry odom;
