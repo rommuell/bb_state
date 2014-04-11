@@ -27,7 +27,10 @@ private:
   double phi_front_wheel_;
   double abs_vel_read_by_escon;
   double ang_vel_read_by_escon;
+  double pose_theta_read_by_escon;
+
   int oldangleinquants;
+  int odom_count;
 
   ros::NodeHandle n;
   ros::Subscriber rake_io_sub;
@@ -36,6 +39,7 @@ private:
   ros::Publisher to_epos_pub;
   ros::Publisher odom_pub;
   ros::Publisher to_escon_pub;
+  nav_msgs::Odometry odom;
   ioboard::IOToBoard io_to_board_message_;
   
   ros::Time last_time_right, last_time_left, last_publish_time;
