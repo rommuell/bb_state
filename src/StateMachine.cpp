@@ -64,6 +64,7 @@ private:
 
   void MoveCallback(const bb_state::TwistWithID &data) {  //callback for move messages
     if(data.id == TwistWithID::JOYSTICK && 
+       data.twist.linear.x &&
        data.id != TwistWithID::INITIALIZE && 
        data.id != TwistWithID::EMERGENCY_STOP) {
       joystick = 10;
