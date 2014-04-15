@@ -63,17 +63,21 @@ private:
   }
 
   void MoveCallback(const bb_state::TwistWithID &data) {  //callback for move messages
-    if(data.id == TwistWithID::JOYSTICK && 
-       data.twist.linear.x &&
+    if(data.id == TwistWithID::JOYSTICK &&
+       (data.twist.linear.x != 0 || joystick > 0) &&
        data.id != TwistWithID::INITIALIZE && 
        data.id != TwistWithID::EMERGENCY_STOP) {
-      joystick = 10;
+      if(data.twist.linear.x != 0) {
+        joystick = 10;
+      } else {
+        joystick--;
+      }
       Move(data);
     } else {
       joystick--;
     }
-
-    if (data.id == current_state_ && !joystick) {  //check if command is permitted
+    ROS_INFO("Joystick: %d", joystick);
+    if (data.id == current_state_ && joystick < 0) {  //check if command is permitted
       Move(data);
     }
 
