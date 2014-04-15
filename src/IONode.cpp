@@ -14,7 +14,7 @@
 #include <bb_state/IONode.h>
 
 // Threading for async IO
-#include <thread>
+// #include <thread>
 
 void IONode::SendTwist(const bb_state::TwistWithID velocitymessage) {
 
@@ -100,24 +100,23 @@ void IONode::SendTwist(const bb_state::TwistWithID velocitymessage) {
 void IONode::IOBoardCallback(ioboard::IOFromBoard from_escon_message) {
   double v_left, v_right;
 
-  ros::Time current_time = ros::Time::now();
-  ros::Duration time_increment;
+  // ros::Time current_time = ros::Time::now();
+  uint32_t time_increment;
   if(from_escon_message.status == 2){
     v_left = from_escon_message.velocity;
     v_right = 409;
-    time_increment = (current_time - last_time_left);
-    last_time_left = current_time;
-
+    time_increment = (from_escon_message.timestamp - last_time_left);
+    last_time_left = from_escon_message.timestamp;
   }
   else {
     v_right = from_escon_message.velocity;
     v_left  = 409;
-    time_increment = (current_time - last_time_right);
-    last_time_right = current_time;
+    time_increment = (from_escon_message.timestamp - last_time_right);
+    last_time_right = from_escon_message.timestamp;
   }
   
-  double d_time_inc = time_increment.toSec();
-
+  // double d_time_inc = time_increment.toSec();
+  float d_time_inc = time_increment / 1000;
   // 4.94V is absolute max (equals 1023 ticks)
   v_left = v_left / 1023 * 4.94;
   v_right = v_right / 1023 * 4.94;
@@ -189,8 +188,10 @@ IONode::IONode() {
 
   odom_pub = n.advertise<nav_msgs::Odometry>("odometry", 100);
   
-  last_time_right = ros::Time::now();
-  last_time_left = ros::Time::now();
+  // last_time_right = ros::Time::now();
+  // last_time_left = ros::Time::now();
+  last_time_right = 0;
+  last_time_left = 0;
 
   old_pose_theta_read_by_escon_ = 0;
   pose_x_read_by_escon_ = 0;
