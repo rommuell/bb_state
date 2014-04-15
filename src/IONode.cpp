@@ -104,13 +104,13 @@ void IONode::IOBoardCallback(ioboard::IOFromBoard from_escon_message) {
   uint32_t time_increment;
   if(from_escon_message.status == 2){
     v_left = from_escon_message.velocity;
-    v_right = 409;
+    v_right = 407.95749;
     time_increment = (from_escon_message.timestamp - last_time_left);
     last_time_left = from_escon_message.timestamp;
   }
   else {
     v_right = from_escon_message.velocity;
-    v_left  = 409;
+    v_left  = 407.95749;
     time_increment = (from_escon_message.timestamp - last_time_right);
     last_time_right = from_escon_message.timestamp;
   }
