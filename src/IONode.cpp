@@ -147,7 +147,7 @@ void IONode::IOBoardCallback(ioboard::IOFromBoard from_escon_message) {
 
   old_pose_theta_read_by_escon_ = pose_theta_read_by_escon;
   ++odom_count;
-  if(this->odom_count >= 25) {
+  if(this->odom_count >= 12) {
     this->PublishOdometry();
     this->odom_count = 0;
   }
