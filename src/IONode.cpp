@@ -98,25 +98,30 @@ void IONode::SendTwist(const bb_state::TwistWithID velocitymessage) {
 }
 
 void IONode::IOBoardCallback(ioboard::IOFromBoard from_escon_message) {
-  double v_left, v_right;
+  //double v_left, v_right;
 
   // ros::Time current_time = ros::Time::now();
   uint32_t time_increment;
+
   if(from_escon_message.status == 2){
+    if(last_time_left == 0) last_time_left = from_escon_message.timestamp;
     v_left = from_escon_message.velocity;
-    v_right = 409;
+    //v_right = 407.95749;
     time_increment = (from_escon_message.timestamp - last_time_left);
     last_time_left = from_escon_message.timestamp;
   }
-  else {
+  else if(from_escon_message.status == 3){
+    if(last_time_right == 0) last_time_right = from_escon_message.timestamp;
     v_right = from_escon_message.velocity;
-    v_left  = 409;
+    //v_left  = 407.95749;
     time_increment = (from_escon_message.timestamp - last_time_right);
     last_time_right = from_escon_message.timestamp;
   }
-  
+  else return;
+  if(time_increment > 25) { ROS_WARN("Time Increment for Odom unexpected high"); return; }
   // double d_time_inc = time_increment.toSec();
-  float d_time_inc = time_increment / 1000;
+  float d_time_inc = (double)time_increment / 1000;
+
   // 4.94V is absolute max (equals 1023 ticks)
   v_left = v_left / 1023 * 4.94;
   v_right = v_right / 1023 * 4.94;
@@ -146,7 +151,7 @@ void IONode::IOBoardCallback(ioboard::IOFromBoard from_escon_message) {
 
   old_pose_theta_read_by_escon_ = pose_theta_read_by_escon;
   ++odom_count;
-  if(this->odom_count >= 12) {
+  if(this->odom_count > 12) {
     this->PublishOdometry();
     this->odom_count = 0;
   }
