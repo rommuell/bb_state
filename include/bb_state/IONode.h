@@ -29,6 +29,8 @@ private:
   double ang_vel_read_by_escon;
   double pose_theta_read_by_escon;
 
+  double v_left, v_right;
+
   int oldangleinquants;
   int odom_count;
 
@@ -43,7 +45,7 @@ private:
   ioboard::IOToBoard io_to_board_message_;
   
   ros::Time last_publish_time;
-  uint32_t last_time_right, last_time_left;
+  uint32_t last_time;
 
   EposManager::EPOSControl Eposmsg;
 

@@ -98,26 +98,23 @@ void IONode::SendTwist(const bb_state::TwistWithID velocitymessage) {
 }
 
 void IONode::IOBoardCallback(ioboard::IOFromBoard from_escon_message) {
-  //double v_left, v_right;
 
-  // ros::Time current_time = ros::Time::now();
   uint32_t time_increment;
 
   if(from_escon_message.status == 2){
-    if(last_time_left == 0) last_time_left = from_escon_message.timestamp;
+    if(last_time == 0) last_time = from_escon_message.timestamp;
     v_left = from_escon_message.velocity;
-    //v_right = 407.95749;
-    time_increment = (from_escon_message.timestamp - last_time_left);
-    last_time_left = from_escon_message.timestamp;
+    time_increment = (from_escon_message.timestamp - last_time);
+    last_time = from_escon_message.timestamp;
   }
   else if(from_escon_message.status == 3){
-    if(last_time_right == 0) last_time_right = from_escon_message.timestamp;
+    if(last_time == 0) last_time = from_escon_message.timestamp;
     v_right = from_escon_message.velocity;
-    //v_left  = 407.95749;
-    time_increment = (from_escon_message.timestamp - last_time_right);
-    last_time_right = from_escon_message.timestamp;
+    time_increment = (from_escon_message.timestamp - last_time);
+    last_time = from_escon_message.timestamp;
   }
   else return;
+
   if(time_increment > 25) { ROS_WARN("Time Increment for Odom unexpected high"); return; }
   // double d_time_inc = time_increment.toSec();
   float d_time_inc = (double)time_increment / 1000;
@@ -193,10 +190,9 @@ IONode::IONode() {
 
   odom_pub = n.advertise<nav_msgs::Odometry>("odometry", 100);
   
-  // last_time_right = ros::Time::now();
-  // last_time_left = ros::Time::now();
-  last_time_right = 0;
-  last_time_left = 0;
+  last_time = 0;
+  v_left = 0;
+  v_right = 0;
 
   old_pose_theta_read_by_escon_ = 0;
   pose_x_read_by_escon_ = 0;
