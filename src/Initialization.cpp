@@ -30,7 +30,7 @@ class Initialization {
 		//Publish to frontwheel Epos:
 		Eposmsg.node_id = 1;
 		Eposmsg.control_mode = 6;
-		Eposmsg.setpoint = 95;
+        Eposmsg.setpoint = 60;
 		to_epos_pub_.publish(Eposmsg);	
 		ros::Time start = ros::Time::now();
 		while ((ros::Time::now()-start).sec < 10 && ros::ok()) {
