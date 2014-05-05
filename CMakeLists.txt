@@ -21,6 +21,10 @@ add_executable(state_machine src/StateMachine.cpp src/IONode.cpp)
 target_link_libraries(state_machine ${catkin_LIBRARIES})
 add_dependencies(state_machine bb_state_gencpp )
 
+add_executable(DriveToStart src/DriveToStart.cpp)
+target_link_libraries(DriveToStart ${catkin_LIBRARIES})
+add_dependencies(DriveToStart bb_state_gencpp )
+
 # add_executable(io_node src/IONode.cpp)
 # target_link_libraries(io_node ${catkin_LIBRARIES})
 # add_dependencies(io_node bb_state_gencpp)

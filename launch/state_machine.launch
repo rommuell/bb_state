@@ -4,10 +4,10 @@
 	<node name="Name" pkg="EposManager" type="EposManager" args="Beachbot_1" ns="motors/BeachBot" output="screen" >
 		<param name="Port" value="USB0" />
 		<param name="Protocol" value="USB" />
-		<param name="Publish_Rate" value=".1" />
+		<param name="Publish_Rate" value="10" />
 		<param name="Heartbeat" value="false" />
 		<param name="Max_Heartbeat_Attempts" value="20" />
-		<param name="Heartbeat_Rate" value=".5" />
+		<param name="Heartbeat_Rate" value="5" />
 	</node>
 
 	<node pkg="lms1xx" name="LMS1xx_node" type="LMS1xx_node" output="screen">
@@ -20,7 +20,7 @@
 	<group>
 		<node pkg="joy" name="joy_node" type="joy_node" output="screen"/>
 		<node pkg="bb_joystick" name="JoystickNode" type="JoystickNode" output="screen"/>
-		<node pkg="bb_state" name="state_machine" type="state_machine" output="screen"/>
+		<node pkg="bb_state" name="state_machine" type="state_machine" />
 		<node pkg="rosserial_server" name="serial_node" type="serial_node" args="/dev/ttyACM0" output="screen"/>
 	</group>
 </launch>

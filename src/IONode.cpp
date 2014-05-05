@@ -117,20 +117,20 @@ void IONode::IOBoardCallback(ioboard::IOFromBoard from_escon_message) {
 
   if(time_increment > 25) { ROS_WARN("Time Increment for Odom unexpected high"); return; }
   // double d_time_inc = time_increment.toSec();
-  float d_time_inc = (double)time_increment / 1000;
 
-  // 4.94V is absolute max (equals 1023 ticks)
-  v_left = v_left / 1023 * 4.94;
-  v_right = v_right / 1023 * 4.94;
+  float d_time_inc = (double)time_increment *0.001;
 
-  // 0 == -4000, 3.94 == + 4000
-  double rpm_left = -4000 + (v_left / 3.94) * 8000;
-  double rpm_right = -4000 + (v_right / 3.94) * 8000;
+  // 3.96V is absolute max (equals 1023 ticks)
+  // 0 == -4000, 3.96 == + 4000
+  double rpm_left = -3996.431373+ (v_left/1020) * 8000;
+  double rpm_right = -4000 + (v_right/1020) * 8000;
+  //double rpm_left = -4000 + (v_left/1019) * 8000;
+  //double rpm_right = -4000 + (v_right/1021) * 8000;
 
   double vel_right_wheel_read_by_escon = rpm_right / (60 * 47) * 0.725;
   double vel_left_wheel_read_by_escon =  rpm_left / (60 * 47) * 0.725;
 
-  abs_vel_read_by_escon = (vel_right_wheel_read_by_escon + vel_left_wheel_read_by_escon) / 2;
+  abs_vel_read_by_escon = (vel_right_wheel_read_by_escon + vel_left_wheel_read_by_escon) * 0.5;
   ang_vel_read_by_escon = (vel_right_wheel_read_by_escon - vel_left_wheel_read_by_escon) / BB_WIDTH;
 
   //Integration:
@@ -144,7 +144,7 @@ void IONode::IOBoardCallback(ioboard::IOFromBoard from_escon_message) {
 
   pose_theta_read_by_escon += delta_pose_theta_read_by_escon;
 
-  pose_theta_read_by_escon_leapfrog_ =  (old_pose_theta_read_by_escon_ + pose_theta_read_by_escon)/2;
+  pose_theta_read_by_escon_leapfrog_ =  (old_pose_theta_read_by_escon_ + pose_theta_read_by_escon)*0.5;
 
   old_pose_theta_read_by_escon_ = pose_theta_read_by_escon;
   ++odom_count;
@@ -158,7 +158,7 @@ void IONode::PublishOdometry() {
   //if((ros::Time::now() - last_publish_time).nsec > 40000000) {
 
     //since all odometry is 6DOF we'll need a quaternion created from yaw
-    geometry_msgs::Quaternion odom_quat = tf::createQuaternionMsgFromYaw(pose_theta_read_by_escon_leapfrog_);
+    geometry_msgs::Quaternion odom_quat = tf::createQuaternionMsgFromYaw(pose_theta_read_by_escon);
 
     odom.header.seq = 1;
 
@@ -191,8 +191,8 @@ IONode::IONode() {
   odom_pub = n.advertise<nav_msgs::Odometry>("odometry", 100);
   
   last_time = 0;
-  v_left = 0;
-  v_right = 0;
+  v_left = 509.8;
+  v_right = 510;
 
   old_pose_theta_read_by_escon_ = 0;
   pose_x_read_by_escon_ = 0;

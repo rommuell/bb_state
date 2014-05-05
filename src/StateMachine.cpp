@@ -5,6 +5,8 @@
 
 using bb_state::TwistWithID;
 
+// Yolo
+
 class StateMachine {
 
 private: 
@@ -64,7 +66,7 @@ private:
 
   void MoveCallback(const bb_state::TwistWithID &data) {  //callback for move messages
     if(data.id == TwistWithID::JOYSTICK &&
-       (data.twist.linear.x != 0 || joystick > 0) &&
+       (data.rake != 0 || joystick > 0) &&
        data.id != TwistWithID::INITIALIZE && 
        data.id != TwistWithID::EMERGENCY_STOP) {
       if(data.twist.linear.x != 0) {
@@ -72,11 +74,13 @@ private:
       } else {
         joystick--;
       }
-      Move(data);
+      TwistWithID msg;
+      msg.twist = data.twist;
+      msg.rake = 0;
+      Move(msg);
     } else {
       joystick--;
     }
-    ROS_INFO("Joystick: %d", joystick);
     if (data.id == current_state_ && joystick < 0) {  //check if command is permitted
       Move(data);
     }

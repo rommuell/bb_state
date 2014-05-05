@@ -14,7 +14,7 @@
 // Threading for async IO
 // #include <thread>
 
-const float BB_WIDTH = 0.264;
+const float BB_WIDTH = 0.305;
 const float center_of_rot_frontwheel = 0.31;
 
 class IONode
