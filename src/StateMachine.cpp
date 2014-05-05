@@ -33,26 +33,33 @@ private:
   };
 
   void SetState(const int &new_state) {
-    if(new_state != current_state_) {
-      current_state_ = new_state;
-      if (new_state == TwistWithID::EMERGENCY_STOP) {
-        spinner.stop();
-        ros::shutdown();
-        ROS_ERROR("EMERGENCY STOP");
-      } 
-      if (new_state == TwistWithID::INITIALIZE) {
-        ROS_INFO("Starting initialization");
-        ros::Rate init_rate(1);   //Only try once a second
-        Initialization *init = new Initialization();
-        while(ros::ok() && !(init->Initialize())) init_rate.sleep();  //loop until initialize is success
-        current_state_ = TwistWithID::PATH_FOLLOWING;
-        ROS_INFO("Starting joystick operation");
-      }
-      if (new_state == TwistWithID::JOYSTICK) ROS_INFO("Starting joystick operation");
-      if (new_state == TwistWithID::PATH_FOLLOWING) ROS_INFO("Starting path following");
-      if (new_state == TwistWithID::PARKING) ROS_INFO("Starting parking");
-      if (new_state == TwistWithID::SHUT_DOWN) ROS_WARN("Shutting down");
+    if (new_state == current_state_){
+      return;
     }
+    else{
+      current_state_ = new_state;
+    }
+    if (current_state_ == TwistWithID::EMERGENCY_STOP) {
+      spinner.stop();
+      ros::shutdown();
+      ROS_ERROR("EMERGENCY STOP");
+    } 
+    else if (current_state_ == TwistWithID::INITIALIZE) {
+      ROS_INFO("Starting initialization");
+      ros::Rate init_rate(1);   //Only try once a second
+      Initialization *init = new Initialization();
+      while(ros::ok() && !(init->Initialize())) init_rate.sleep();  //loop until initialize is success
+      //?
+      current_state_ = TwistWithID::PATH_FOLLOWING;
+      //?
+      ROS_INFO("Starting path following operation");
+    }
+    else if (current_state_ == TwistWithID::JOYSTICK) ROS_INFO("Starting joystick operation");
+    else if (current_state_ == TwistWithID::PATH_FOLLOWING) ROS_INFO("Starting path following");
+    else if (current_state_ == TwistWithID::PARKING) ROS_INFO("Starting parking");
+    else if (current_state_ == TwistWithID::SHUT_DOWN) ROS_WARN("Shutting down");
+    else return;
+    
   }
 
   void Move(const bb_state::TwistWithID &twist) {    //translates velocity messages to motor control
@@ -65,27 +72,21 @@ private:
   }
 
   void MoveCallback(const bb_state::TwistWithID &data) {  //callback for move messages
-    if(data.id == TwistWithID::JOYSTICK &&
-       (data.rake != 0 || joystick > 0) &&
-       data.id != TwistWithID::INITIALIZE && 
-       data.id != TwistWithID::EMERGENCY_STOP) {
-      if(data.twist.linear.x != 0) {
-        joystick = 10;
-      } else {
-        joystick--;
-      }
-      TwistWithID msg;
-      msg.twist = data.twist;
-      msg.rake = 0;
-      Move(msg);
-    } else {
-      joystick--;
-    }
-    if (data.id == current_state_ && joystick < 0) {  //check if command is permitted
+
+    if(data.id == current_state_){
       Move(data);
     }
 
-    else if (data.id == TwistWithID::EMERGENCY_STOP) ROS_WARN("Received unpermitted move command from Initialization");
+    else if((current_state_ != TwistWithID::INITIALIZE) &&
+    (current_state_ != TwistWithID::EMERGENCY_STOP) &&
+    (current_state_ != TwistWithID::SHUT_DOWN) &&
+    (data.id == TwistWithID::JOYSTICK) &&
+    (data.rake != 0 || data.twist.linear.x > 0 || data.twist.linear.y > 0)){
+      SetState(2);
+      Move(data);
+    }
+
+    else if (data.id == TwistWithID::EMERGENCY_STOP) ROS_WARN("Received unpermitted move command from Emergency_Stop");
     else if (data.id == TwistWithID::INITIALIZE) ROS_WARN("Received unpermitted move command from Initialization");
     else if (data.id == TwistWithID::JOYSTICK) ROS_WARN("Received unpermitted move command from Joystick");
     else if (data.id == TwistWithID::PATH_FOLLOWING) ROS_WARN("Received unpermitted move command from Path Following");
@@ -97,7 +98,7 @@ public:
     current_state_ = -1;
     SetState(TwistWithID::INITIALIZE);
     io = new IONode();
-    // state_sub = n.subscribe("robot_state", 10, &StateMachine::StateCallback, this);
+    state_sub = n.subscribe("robot_state", 10, &StateMachine::StateCallback, this);
     move_sub = n.subscribe("move_io", 1, &StateMachine::MoveCallback, this);
     loop();
   }
