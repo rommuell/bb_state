@@ -4,7 +4,7 @@
 	<node name="Name" pkg="EposManager" type="EposManager" args="Beachbot_1" ns="motors/BeachBot" output="screen" >
 		<param name="Port" value="USB0" />
 		<param name="Protocol" value="USB" />
-		<param name="Publish_Rate" value="10" />
+		<param name="Publish_Rate" value="5" />
 		<param name="Heartbeat" value="false" />
 		<param name="Max_Heartbeat_Attempts" value="20" />
 		<param name="Heartbeat_Rate" value="5" />
